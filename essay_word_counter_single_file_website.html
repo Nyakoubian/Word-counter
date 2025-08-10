@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Essay Word Counter</title>
+  <meta name="description" content="Fast, accurate word & character counter for essays. Paste, type, or drag‑and‑drop a file." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' x='0.1em' font-size='90'%3E✍%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+  <style>
+    :root{
+      --bg:#0b0c10; --panel:#111319; --muted:#9aa3b2; --text:#e7eaf1; --accent:#7c5cff; --accent-2:#23c483; --border:#1b1f2a;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji'; background:radial-gradient(1200px 600px at 20% -10%, rgba(124,92,255,.15), transparent 60%), linear-gradient(180deg, #0b0c10, #0b0c10); color:var(--text)}
+    .container{max-width:1100px; margin:0 auto; padding:24px}
+    header{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px}
+    .brand{display:flex; align-items:center; gap:12px}
+    .logo{width:40px; height:40px; display:grid; place-items:center; background:linear-gradient(135deg, var(--accent), #9f84ff); border-radius:12px; box-shadow:0 10px 30px rgba(124,92,255,.3)}
+    h1{font-size:20px; margin:0}
+    .subtitle{color:var(--muted); font-size:13px}
+    .card{background:var(--panel); border:1px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .toolbar{display:flex; flex-wrap:wrap; gap:8px; padding:12px; border-bottom:1px solid var(--border); background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0))}
+    button, .btn{appearance:none; border:1px solid var(--border); background:#151827; color:var(--text); padding:10px 12px; border-radius:12px; font-weight:600; font-size:14px; cursor:pointer; transition:.18s; display:inline-flex; gap:8px; align-items:center}
+    button:hover{transform:translateY(-1px); border-color:#2a3144}
+    button.primary{background:linear-gradient(135deg, var(--accent), #9f84ff); border-color:transparent}
+    button.ghost{background:transparent}
+    .stats{display:grid; grid-template-columns:repeat(5,1fr); gap:12px; padding:12px; border-bottom:1px solid var(--border)}
+    .stat{background:#0e1220; border:1px solid var(--border); padding:12px; border-radius:12px}
+    .stat .label{color:var(--muted); font-size:12px}
+    .stat .value{font-size:22px; font-weight:800; margin-top:4px}
+    .editor{position:relative}
+    textarea{width:100%; min-height:320px; padding:16px; background:#0b0e18; color:var(--text); border:0; outline:none; resize:vertical; font:16px/1.6 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    .dropzone{position:relative; display:flex; align-items:center; justify-content:center; gap:8px; padding:14px; border-top:1px dashed #2a2f3f; color:var(--muted); font-size:13px}
+    .dropzone.dragover{background:#0e1322}
+    .options{display:flex; flex-wrap:wrap; gap:12px; padding:12px}
+    .opt{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+    footer{margin-top:18px; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+    .badge{padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:#0e1220}
+    @media (max-width:900px){ .stats{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:520px){ .stats{grid-template-columns:1fr} .toolbar{justify-content:center} }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">📝</div>
+        <div>
+          <h1>Essay Word Counter</h1>
+          <div class="subtitle">Paste, type, or drop a file • live word & character counts • reading time</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="downloadBtn" class="ghost" title="Download your text as a .txt file">⬇️ Download</button>
+      </div>
+    </header>
+
+    <section class="card">
+      <div class="toolbar">
+        <button id="clearBtn" title="Clear the editor">🧹 Clear</button>
+        <button id="pasteBtn" title="Paste from clipboard">📋 Paste</button>
+        <button id="copyBtn" title="Copy all text">📄 Copy</button>
+        <button id="sampleBtn" class="primary" title="Insert a sample paragraph">Try a sample</button>
+      </div>
+
+      <div class="stats" id="stats">
+        <div class="stat"><div class="label">Words</div><div class="value" id="words">0</div></div>
+        <div class="stat"><div class="label">Characters (no spaces)</div><div class="value" id="charsNo">0</div></div>
+        <div class="stat"><div class="label">Characters (with spaces)</div><div class="value" id="chars">0</div></div>
+        <div class="stat"><div class="label">Sentences</div><div class="value" id="sentences">0</div></div>
+        <div class="stat"><div class="label">Estimated reading time</div><div class="value" id="reading">0:00</div></div>
+      </div>
+
+      <div class="editor">
+        <textarea id="editor" placeholder="Start typing or paste your essay here…"></textarea>
+      </div>
+
+      <div class="options">
+        <label class="opt"><input type="checkbox" id="excludeNumbers" /> Exclude numbers from word count</label>
+        <label class="opt"><input type="checkbox" id="smartQuotes" checked /> Treat hyphenated & apostrophe words as one</label>
+        <label class="opt"><input type="checkbox" id="trimSpaces" checked /> Collapse extra whitespace</label>
+      </div>
+
+      <div class="dropzone" id="dropzone">📁 Drag & drop a <strong>.txt</strong> file here (or click to upload)
+        <input type="file" id="fileInput" accept="text/plain" style="position:absolute; inset:0; opacity:0; cursor:pointer" />
+      </div>
+    </section>
+
+    <footer>
+      <div class="badge">Built with vanilla JS • No tracking</div>
+      <div>Tip: Press <strong>Ctrl/Cmd + B</strong> to toggle a clean preview (focus mode).</div>
+    </footer>
+  </div>
+
+  <script>
+    const $ = (id)=>document.getElementById(id);
+    const editor = $("editor");
+    const wordsEl = $("words");
+    const charsEl = $("chars");
+    const charsNoEl = $("charsNo");
+    const sentencesEl = $("sentences");
+    const readingEl = $("reading");
+    const excludeNumbers = $("excludeNumbers");
+    const smartQuotes = $("smartQuotes");
+    const trimSpaces = $("trimSpaces");
+    const dropzone = $("dropzone");
+
+    const SAMPLE = `In a world overflowing with information, clarity is power. A good essay is less about sounding smart and more about communicating ideas cleanly. Start with a clear thesis, build paragraphs around single points, and revise for flow.`;
+
+    function sanitize(str){
+      if(trimSpaces.checked){
+        // collapse multiline whitespace
+        str = str.replace(/[\t\f\v]+/g, ' ')
+                 .replace(/\s+\n/g, '\n')
+                 .replace(/\n{3,}/g, '\n\n');
+      }
+      return str;
+    }
+
+    function count(text){
+      const raw = text || '';
+      const cleaned = sanitize(raw);
+
+      // character counts
+      const charsWithSpaces = cleaned.length;
+      const charsNoSpaces = cleaned.replace(/\s/g, '').length;
+
+      // sentence heuristic: split on ., !, ?, or ellipsis (not perfect, but practical)
+      const sentenceMatches = cleaned.match(/[^.!?\n\r…]+[.!?…]+(\s|$)/g);
+      const sentenceCount = sentenceMatches ? sentenceMatches.length : (cleaned.trim().length ? 1 : 0);
+
+      // word regex
+      let wordRegex;
+      if(smartQuotes.checked){
+        // words incl. apostrophes and hyphens: can't, long-term
+        wordRegex = /[A-Za-zÀ-ÖØ-öø-ÿ0-9]+(?:['’\-][A-Za-zÀ-ÖØ-öø-ÿ0-9]+)*/g;
+      } else {
+        wordRegex = /[A-Za-zÀ-ÖØ-öø-ÿ0-9]+/g;
+      }
+      let words = cleaned.match(wordRegex) || [];
+      if(excludeNumbers.checked){
+        words = words.filter(w => /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(w));
+      }
+      const wordCount = words.length;
+
+      // reading time (avg 200 wpm)
+      const minutes = Math.floor(wordCount / 200);
+      const seconds = Math.round((wordCount % 200) / 200 * 60);
+      const reading = `${minutes}:${String(seconds).padStart(2,'0')}`;
+
+      return {wordCount, charsWithSpaces, charsNoSpaces, sentenceCount, reading, cleaned};
+    }
+
+    function update(){
+      const {wordCount, charsWithSpaces, charsNoSpaces, sentenceCount, reading} = count(editor.value);
+      wordsEl.textContent = wordCount.toLocaleString();
+      charsEl.textContent = charsWithSpaces.toLocaleString();
+      charsNoEl.textContent = charsNoSpaces.toLocaleString();
+      sentencesEl.textContent = sentenceCount.toLocaleString();
+      readingEl.textContent = reading;
+      autosize();
+      saveDraft();
+    }
+
+    function autosize(){
+      // subtle autosize behavior
+      editor.style.height = 'auto';
+      const h = Math.min(800, Math.max(240, editor.scrollHeight + 2));
+      editor.style.height = h + 'px';
+    }
+
+    // Toolbar actions
+    $("clearBtn").addEventListener('click', ()=>{ editor.value=''; update(); editor.focus(); });
+    $("pasteBtn").addEventListener('click', async ()=>{
+      try{
+        const text = await navigator.clipboard.readText();
+        if(text){ editor.value = text; update(); }
+      }catch(e){ alert('Clipboard paste is blocked by your browser. Try Ctrl/Cmd+V.'); }
+    });
+    $("copyBtn").addEventListener('click', async ()=>{
+      try{ await navigator.clipboard.writeText(editor.value); }catch(e){ alert('Copy blocked by browser settings.'); }
+    });
+    $("sampleBtn").addEventListener('click', ()=>{ editor.value = SAMPLE; update(); });
+
+    $("downloadBtn").addEventListener('click', ()=>{
+      const blob = new Blob([editor.value], {type:'text/plain'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'essay.txt'; a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // File handling
+    const fileInput = $("fileInput");
+    fileInput.addEventListener('change', (e)=>{
+      const file = e.target.files?.[0];
+      if(!file) return;
+      if(file.type && file.type !== 'text/plain'){ alert('Please upload a .txt file.'); return; }
+      const reader = new FileReader();
+      reader.onload = ()=>{ editor.value = reader.result || ''; update(); };
+      reader.readAsText(file);
+      fileInput.value = '';
+    });
+
+    ;['dragenter','dragover'].forEach(ev=>dropzone.addEventListener(ev, (e)=>{ e.preventDefault(); dropzone.classList.add('dragover'); }));
+    ;['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev, (e)=>{ e.preventDefault(); dropzone.classList.remove('dragover'); }));
+    dropzone.addEventListener('drop', (e)=>{
+      const file = e.dataTransfer.files?.[0];
+      if(file){ fileInput.files = e.dataTransfer.files; fileInput.dispatchEvent(new Event('change')); }
+    });
+
+    // Options re-count
+    excludeNumbers.addEventListener('change', update);
+    smartQuotes.addEventListener('change', update);
+    trimSpaces.addEventListener('change', update);
+
+    // Live typing
+    editor.addEventListener('input', update);
+
+    // Keyboard: Ctrl/Cmd+B focus mode
+    document.addEventListener('keydown', (e)=>{
+      if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='b'){
+        document.body.classList.toggle('focus');
+      }
+    });
+
+    // Draft persistence
+    const STORAGE_KEY = 'essay-word-counter-draft-v1';
+    function saveDraft(){ try{ localStorage.setItem(STORAGE_KEY, editor.value); }catch(_){} }
+    function loadDraft(){ try{ const v = localStorage.getItem(STORAGE_KEY); if(v){ editor.value = v; } }catch(_){} }
+
+    // Initial
+    loadDraft();
+    update();
+  </script>
+</body>
+</html>
